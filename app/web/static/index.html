@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Adrobot — обёртка над Keitaro</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+  <div id="toasts" class="toasts" role="status" aria-live="polite"></div>
+
+  <!-- ------------------------------ Login ------------------------------ -->
+  <section id="view-login" class="view view--centered" hidden>
+    <form id="form-login" class="card card--narrow" novalidate>
+      <h1 class="brand"><span class="brand__dot"></span>Adrobot</h1>
+      <p class="muted">Обёртка над трекером Keitaro</p>
+
+      <label class="field">
+        <span class="field__label">E-mail</span>
+        <input id="login-email" type="email" name="email" autocomplete="username" required>
+      </label>
+
+      <label class="field">
+        <span class="field__label">Пароль</span>
+        <input id="login-password" type="password" name="password"
+               autocomplete="current-password" minlength="8" required>
+      </label>
+
+      <p id="login-error" class="error" hidden></p>
+      <button id="login-submit" class="btn btn--primary btn--block" type="submit">Войти</button>
+    </form>
+  </section>
+
+  <!-- ------------------------------- App ------------------------------- -->
+  <div id="view-app" class="app" hidden>
+    <header class="topbar">
+      <div class="topbar__brand">
+        <span class="brand__dot"></span>
+        <strong>Adrobot</strong>
+      </div>
+      <nav class="tabs" role="tablist">
+        <button class="tab is-active" type="button" role="tab" data-tab="create"
+                id="tab-btn-create" aria-selected="true" aria-controls="panel-create">
+          Создать кампанию
+        </button>
+        <button class="tab" type="button" role="tab" data-tab="edit"
+                id="tab-btn-edit" aria-selected="false" aria-controls="panel-edit">
+          Редактор кампании
+        </button>
+      </nav>
+      <div class="topbar__user">
+        <span id="user-email" class="muted"></span>
+        <button id="logout" class="btn btn--ghost" type="button">Выйти</button>
+      </div>
+    </header>
+
+    <main class="content">
+      <!-- -------------------------- Create tab -------------------------- -->
+      <section id="panel-create" class="panel" role="tabpanel" aria-labelledby="tab-btn-create">
+        <div class="grid grid--split">
+          <form id="form-create" class="card" novalidate>
+            <h2 class="card__title">Новая кампания</h2>
+            <p class="muted card__subtitle">
+              Создаётся два потока: первый ловит выбранную страну и уводит на
+              <span id="redirect-host">google.com</span>, второй отправляет остальных на оффер.
+            </p>
+
+            <label class="field">
+              <span class="field__label">Название</span>
+              <input id="create-name" type="text" maxlength="200" required
+                     placeholder="campaign1" autocomplete="off">
+              <span class="field__hint">
+                Префикс <code id="prefix-hint">test_</code> подставится автоматически.
+              </span>
+            </label>
+
+            <label class="field">
+              <span class="field__label">Гео</span>
+              <input id="create-geo" type="text" list="countries" maxlength="2" required
+                     placeholder="AU" autocomplete="off" spellcheck="false">
+              <datalist id="countries"></datalist>
+              <span class="field__hint" id="geo-hint">ISO-код страны: AU, MX, RO…</span>
+            </label>
+
+            <div class="field">
+              <span class="field__label">Оффер</span>
+              <div class="combo" data-combo="create-offer">
+                <input id="create-offer" type="text" role="combobox" autocomplete="off"
+                       aria-expanded="false" aria-autocomplete="list"
+                       placeholder="Начните вводить название или ID оффера">
+                <ul class="combo__list" id="create-offer-list" role="listbox" hidden></ul>
+              </div>
+              <span class="field__hint" id="create-offer-hint">Оффер не выбран</span>
+            </div>
+
+            <details class="advanced">
+              <summary>Домен, группа и источник</summary>
+              <p class="muted" id="defaults-preview">Загружаю значения по умолчанию…</p>
+              <div class="grid grid--three">
+                <label class="field">
+                  <span class="field__label">Домен</span>
+                  <select id="create-domain"></select>
+                </label>
+                <label class="field">
+                  <span class="field__label">Группа</span>
+                  <select id="create-group"></select>
+                </label>
+                <label class="field">
+                  <span class="field__label">Источник</span>
+                  <select id="create-source"></select>
+                </label>
+              </div>
+            </details>
+
+            <button id="create-submit" class="btn btn--primary btn--block" type="submit">
+              Создать кампанию
+            </button>
+          </form>
+
+          <aside id="create-result" class="card card--result" hidden>
+            <h2 class="card__title">Кампания создана</h2>
+            <dl class="kv" id="create-result-kv"></dl>
+            <h3 class="section-title">Потоки</h3>
+            <ul class="stream-list" id="create-result-streams"></ul>
+            <button id="create-result-edit" class="btn btn--block" type="button">
+              Открыть в редакторе
+            </button>
+          </aside>
+        </div>
+      </section>
+
+      <!-- --------------------------- Edit tab --------------------------- -->
+      <section id="panel-edit" class="panel" role="tabpanel" aria-labelledby="tab-btn-edit" hidden>
+        <div class="card card--toolbar">
+          <div class="field field--inline">
+            <span class="field__label">Кампания</span>
+            <div class="combo combo--wide" data-combo="edit-campaign">
+              <input id="edit-campaign" type="text" role="combobox" autocomplete="off"
+                     aria-expanded="false" aria-autocomplete="list"
+                     placeholder="Название или ID кампании">
+              <ul class="combo__list" id="edit-campaign-list" role="listbox" hidden></ul>
+            </div>
+          </div>
+          <label class="field field--inline">
+            <span class="field__label">Период</span>
+            <select id="edit-period">
+              <option value="1">Сегодня</option>
+              <option value="7">7 дней</option>
+              <option value="30" selected>30 дней</option>
+              <option value="90">90 дней</option>
+              <option value="365">Год</option>
+            </select>
+          </label>
+          <button id="fetch-streams" class="btn" type="button" disabled>Fetch streams</button>
+        </div>
+
+        <div id="edit-empty" class="empty">Выберите кампанию, чтобы редактировать её офферы.</div>
+
+        <div id="edit-untracked" class="empty" hidden>
+          <p>Кампания ещё не загружена в редактор.</p>
+          <button id="fetch-first" class="btn btn--primary" type="button">Fetch streams</button>
+        </div>
+
+        <div id="edit-body" hidden>
+          <div class="card">
+            <div class="card__head">
+              <h2 class="card__title" id="edit-campaign-name"></h2>
+              <span class="badge" id="edit-campaign-state"></span>
+            </div>
+            <dl class="kv kv--inline" id="edit-campaign-kv"></dl>
+            <div class="totals" id="edit-totals"></div>
+            <p class="warn" id="stats-warning" hidden>
+              Статистика Keitaro сейчас недоступна — показаны нули.
+            </p>
+          </div>
+
+          <div id="draft-bar" class="draft-bar" hidden>
+            <span class="draft-bar__text">
+              Есть неопубликованные изменения — в Keitaro они ещё не ушли.
+            </span>
+            <button id="publish" class="btn btn--primary" type="button">Push to Keitaro</button>
+            <button id="discard" class="btn" type="button">Cancel</button>
+          </div>
+
+          <div id="streams"></div>
+        </div>
+
+        <!-- Lives outside the stream list so the combobox survives re-renders;
+             it is moved into the offer stream's card after each render. -->
+        <div id="add-offer-row" class="field field--inline add-offer" hidden>
+          <div class="combo combo--wide" data-combo="add-offer">
+            <input id="add-offer" type="text" role="combobox" autocomplete="off"
+                   aria-expanded="false" aria-autocomplete="list"
+                   placeholder="Добавить оффер: название или ID">
+            <ul class="combo__list" id="add-offer-list" role="listbox" hidden></ul>
+          </div>
+          <button id="add-offer-btn" class="btn btn--primary" type="button" disabled>
+            Добавить
+          </button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="/static/js/main.js"></script>
+</body>
+</html>
